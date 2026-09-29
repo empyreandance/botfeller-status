@@ -307,7 +307,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("costs").hidden = !OWNER;
     if (OWNER) renderCosts();
     const stale = $("stale");
-    if (b.budget_out) { stale.hidden = false; stale.textContent = "The bot's AI budget for this month is used up, so it can't check comments until the budget resets. Alex has been notified on his owner view."; }
+    if (b.budget_out) { stale.hidden = false; stale.textContent = "The bot's AI budget for this month is used up, so it can't check comments until the budget resets or Alex raises the limit."; }
     else if (dataAge > 360) { stale.hidden = false; stale.textContent = `No update from the Studio for ${ago(dataAge).replace(" ago", "")}. The bot may be fine, but this page can't tell.`; }
     else stale.hidden = true;
     $("updated").textContent = `Status updated ${ago(dataAge)}. Refreshes every 2 minutes.`;
