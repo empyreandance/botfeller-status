@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BotFeller Mod Desk</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --ground: #eef1f5; --surface: #ffffff; --surface-2: #f5f7fa; --ink: #0e1b2c; --muted: #5a6a7e; --line: #d6dde6;
+  --navy: #0c2340; --navy-ink: #ffffff; --navy-muted: #a9b8cc; --accent: #c8102e;
+  --ok: #1e7f4f; --ok-bg: #e2f3e9; --warn: #92600f; --warn-bg: #fbefd9; --crit: #b3122d; --crit-bg: #fbe3e7;
+  --info: #2f5b8f; --info-bg: #e3ecf7;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #081320; --surface: #0f1c2d; --surface-2: #13233a; --ink: #e8edf4; --muted: #95a3b7; --line: #22354f;
+    --navy: #16304f; --navy-ink: #f2f5fa; --navy-muted: #8fa3bf; --accent: #ff4d63;
+    --ok: #4fcb8e; --ok-bg: #11301f; --warn: #f0b04a; --warn-bg: #33260f; --crit: #ff6b7d; --crit-bg: #3a1520;
+    --info: #8db6ea; --info-bg: #15283f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #081320; --surface: #0f1c2d; --surface-2: #13233a; --ink: #e8edf4; --muted: #95a3b7; --line: #22354f;
+  --navy: #16304f; --navy-ink: #f2f5fa; --navy-muted: #8fa3bf; --accent: #ff4d63;
+  --ok: #4fcb8e; --ok-bg: #11301f; --warn: #f0b04a; --warn-bg: #33260f; --crit: #ff6b7d; --crit-bg: #3a1520;
+  --info: #8db6ea; --info-bg: #15283f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: max(16px, env(safe-area-inset-top, 0px)) 40px; }
+[hidden] { display: none !important; }
+a { color: var(--info); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 18px; }
+.num, time, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* masthead */
+.mast { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand h1 { margin: 0; font: 700 30px/1 var(--display); letter-spacing: .01em; color: var(--ink); }
+.brand h1 b { color: var(--accent); }
+.brand span { color: var(--muted); font-size: 14px; }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; font: 600 13px/1.2 var(--body); background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+.pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.pill.ok { background: var(--ok-bg); border-color: transparent; color: var(--ok); } .pill.ok i { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+.pill.warn { background: var(--warn-bg); border-color: transparent; color: var(--warn); } .pill.warn i { background: var(--warn); }
+.pill.crit { background: var(--crit-bg); border-color: transparent; color: var(--crit); } .pill.crit i { background: var(--crit); }
+.chip { font: 500 12px/1 var(--body); padding: 5px 9px; border-radius: 6px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); letter-spacing: .02em; }
+.banner { padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); font-weight: 500; }
+
+/* linescore */
+.linescore { background: var(--navy); color: var(--navy-ink); border-radius: 12px; overflow-x: auto; }
+.linescore table { border-collapse: collapse; width: 100%; min-width: 560px; }
+.linescore th { font: 600 12px/1 var(--body); text-transform: uppercase; letter-spacing: .09em; color: var(--navy-muted); padding: 12px 8px 6px; text-align: center; }
+.linescore th:first-child, .linescore td:first-child { text-align: left; padding-left: 16px; }
+.linescore td { font: 700 40px/1 var(--display); text-align: center; padding: 2px 8px 12px; }
+.linescore td:first-child { font: 600 14px/1.3 var(--body); color: var(--navy-muted); vertical-align: middle; }
+.linescore td.hot { color: #ff8a99; }
+.linescore td.zero { color: color-mix(in srgb, var(--navy-ink) 45%, transparent); }
+.linescore .rhe { border-left: 1px solid color-mix(in srgb, var(--navy-ink) 18%, transparent); }
+
+/* panels */
+.row { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) { .row { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.panel h2 { margin: 0 0 12px; font: 700 20px/1.1 var(--display); letter-spacing: .02em; text-transform: uppercase; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.panel h2 small { font: 500 13px/1 var(--body); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.empty { color: var(--muted); margin: 4px 0; }
+
+/* waiting on a mod */
+.ask { border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 10px; padding: 12px; display: grid; gap: 6px; background: var(--surface-2); }
+.ask + .ask { margin-top: 10px; }
+.ask .top { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
+.ask strong { font: 700 18px/1.1 var(--display); letter-spacing: .02em; }
+.ask q { color: var(--ink); }
+.ask .meta { color: var(--muted); font-size: 13px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; font: 600 13px/1 var(--body); text-decoration: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--navy); color: var(--navy-ink); border-color: var(--navy); }
+
+/* 7-day chart */
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 6px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+
+/* recent actions */
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.filters button { font: 600 13px/1 var(--body); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.log { list-style: none; margin: 0; padding: 0; }
+.log li { display: grid; grid-template-columns: 74px 1fr; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.log li:first-child { border-top: 0; }
+.log time { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.log .what { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag { font: 700 11px/1 var(--body); letter-spacing: .07em; text-transform: uppercase; padding: 4px 7px; border-radius: 5px; }
+.tag.remove { background: var(--crit-bg); color: var(--crit); }
+.tag.report { background: var(--warn-bg); color: var(--warn); }
+.tag.ban { background: var(--crit); color: #fff; }
+.tag.ask { background: var(--warn); color: var(--surface); }
+.tag.declined, .tag.expired { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.tag.cleared { background: var(--ok-bg); color: var(--ok); }
+.rule { font: 500 12px/1 var(--mono); color: var(--muted); }
+.user { font-weight: 600; }
+.log q { grid-column: 2; color: var(--ink); overflow-wrap: anywhere; }
+.log .why { grid-column: 2; color: var(--muted); font-size: 13px; }
+.log .links { grid-column: 2; display: flex; gap: 12px; font-size: 13px; }
+@media (max-width: 480px) { .log li { grid-template-columns: 1fr; } .log q, .log .why, .log .links { grid-column: 1; } }
+
+details.errors summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+details.errors li { font-size: 13px; color: var(--muted); }
+footer { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; }
+footer button { font: 600 13px/1 var(--body); background: none; border: 0; color: var(--info); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+
+/* passcode gate */
+.gate { max-width: 400px; margin: 12vh auto 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 14px; }
+.gate h1 { margin: 0; font: 700 32px/1 var(--display); } .gate h1 b { color: var(--accent); }
+.gate p { margin: 0; color: var(--muted); }
+.gate form { display: grid; gap: 10px; }
+.gate input { font: 500 16px/1 var(--mono); padding: 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); width: 100%; }
+.gate .err { color: var(--crit); font-weight: 500; min-height: 1.4em; margin: 0; }
+.gate button { font: 700 16px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 12px; border-radius: 9px; border: 0; background: var(--navy); color: var(--navy-ink); cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<section class="gate" id="gate" aria-labelledby="gate-title">
+  <h1 id="gate-title">BotFeller <b>Mod Desk</b></h1>
+  <p>Live status of u/BotFeller, the r/ClevelandGuardians mod bot. Enter the team passcode to see it.</p>
+  <form id="unlock">
+    <label for="pass" class="chip" style="justify-self:start">Team passcode</label>
+    <input id="pass" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" required>
+    <p class="err" id="gate-err" role="alert"></p>
+    <button type="submit" id="unlock-btn">Unlock</button>
+  </form>
+  <p style="font-size:13px">Ask Alex for the passcode. This device remembers it until you tap Lock.</p>
+</section>
+
+<main class="wrap" id="app" hidden>
+  <header class="mast">
+    <div class="brand"><h1>BotFeller <b>Mod Desk</b></h1><span>r/ClevelandGuardians</span></div>
+    <div class="status" aria-live="polite">
+      <span class="pill" id="state-pill"><i></i><span id="state-text">Checking…</span></span>
+      <span class="chip" id="mode-chip"></span>
+      <span class="chip" id="ban-chip"></span>
+    </div>
+  </header>
+  <div class="banner" id="stale" hidden></div>
+
+  <div class="linescore" role="region" aria-label="Today's numbers">
+    <table>
+      <thead><tr><th scope="col">Today</th><th scope="col">Read</th><th scope="col">Flagged</th><th scope="col">Cleared</th><th scope="col">Removed</th><th scope="col">Mod queue</th><th scope="col" class="rhe">Asked</th><th scope="col">Banned</th></tr></thead>
+      <tbody><tr><td id="today-label">—</td><td id="c-read" class="num">0</td><td id="c-flagged" class="num">0</td><td id="c-cleared" class="num">0</td><td id="c-removed" class="num">0</td><td id="c-queue" class="num">0</td><td id="c-asked" class="num rhe">0</td><td id="c-banned" class="num">0</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="row">
+    <section class="panel" aria-labelledby="wait-title">
+      <h2 id="wait-title">Waiting on a mod <small id="wait-count"></small></h2>
+      <div id="waiting"></div>
+    </section>
+    <section class="panel chart" aria-labelledby="week-title">
+      <h2 id="week-title">Last 7 days <small>removals and mod-queue reports</small></h2>
+      <div id="week"></div>
+      <div class="legend"><span style="--c: var(--crit)">Removed</span><span style="--c: var(--warn)">Sent to the mod queue</span></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="log-title">
+    <h2 id="log-title">Recent actions <small>newest first</small></h2>
+    <div class="filters" role="group" aria-label="Filter actions">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="remove" aria-pressed="false">Removed</button>
+      <button type="button" data-f="report" aria-pressed="false">Mod queue</button>
+      <button type="button" data-f="ban" aria-pressed="false">Bans</button>
+      <button type="button" data-f="cleared" aria-pressed="false">Cleared</button>
+    </div>
+    <ul class="log" id="log"></ul>
+  </section>
+
+  <details class="errors panel" id="errors" hidden><summary id="errors-sum"></summary><ul id="errors-list"></ul></details>
+
+  <footer>
+    <span id="updated">Updates every 2 minutes.</span>
+    <span>Data is encrypted; only the team passcode opens it. <button type="button" id="lock">Lock this device</button></span>
+  </footer>
+</main>
+
+<script>
+(() => {
+  const API = "https://api.github.com/repos/empyreandance/botfeller-status/contents/status.json?ref=data";
+  const RAW = "https://raw.githubusercontent.com/empyreandance/botfeller-status/data/status.json";
+  const STORE = "botfeller-desk-pass";
+  const RULES = { R1: "Insult or call-out", R2: "Bigotry", R3: "Looks and bodies", R4: "Threat", R5: "Sexual comment", R6: "Streams or spam",
+    R7: "Rival fan taunting", R8: "Politics", R9: "Name change", R10: "Game-fixing claim", R11: "Playoff ticket sale", R12: "Banned insult",
+    R13: "Pushing the line", R14: "Suicide joke", R15: "Told someone to kill themselves" };
+  const KIND = { remove: ["remove", "Removed"], report: ["report", "Mod queue"], ban: ["ban", "Banned"], ask_mods: ["ask", "Asked mods"],
+    ban_declined_by_mod: ["declined", "Mod said no"], ban_expired: ["expired", "No answer, no ban"], cleared: ["cleared", "Cleared"] };
+  const $ = id => document.getElementById(id);
+  const tz = "America/New_York";
+  const tfmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
+  const dfmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, month: "short", day: "numeric" });
+  const wfmt = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short" });
+  const dayKey = t => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(t * 1000));
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const ago = s => s < 60 ? `${Math.max(0, Math.round(s))} sec ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min ago`;
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  let key = null, keySalt = null, pass = null, data = null, blobAt = 0, filter = "all", timer = null;
+
+  const store = { get() { try { return localStorage.getItem(STORE); } catch { return null; } },
+                  set(v) { try { localStorage.setItem(STORE, v); } catch {} },
+                  clear() { try { localStorage.removeItem(STORE); } catch {} } };
+
+  async function fetchBlob() {
+    try {
+      const r = await fetch(API, { headers: { Accept: "application/vnd.github.raw" }, cache: "no-store" });
+      if (r.ok) return await r.json();
+    } catch {}
+    const r = await fetch(RAW + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("The status file couldn't be loaded (HTTP " + r.status + ").");
+    return await r.json();
+  }
+  async function deriveKey(p, salt, iter) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(p), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(salt), iterations: iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  }
+  async function open(blob) {
+    if (!key || keySalt !== blob.salt) { key = await deriveKey(pass, blob.salt, blob.iter); keySalt = blob.salt; }
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(blob.iv) }, key, b64(blob.data));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+
+  function showGate(msg) {
+    clearInterval(timer); timer = null;
+    $("app").hidden = true; $("gate").hidden = false; $("gate-err").textContent = msg || "";
+    $("pass").value = ""; $("pass").focus();
+  }
+  async function refresh(first) {
+    try {
+      const blob = await fetchBlob();
+      data = await open(blob);
+      blobAt = blob.generated;
+      render();
+      if (first) { $("gate").hidden = true; $("app").hidden = false; }
+    } catch (e) {
+      if (e && e.name === "OperationError") { key = null; store.clear(); showGate("That passcode didn't work. Check it with Alex."); return; }
+      if (first) { showGate(e.message || "Couldn't load the status. Try again in a minute."); return; }
+      $("stale").hidden = false; $("stale").textContent = "Couldn't reach the status file just now. It'll retry in 2 minutes.";
+    }
+  }
+
+  function render() {
+    const now = Date.now() / 1000, b = data.bot;
+    const loopAge = now - b.last_loop, dataAge = now - blobAt;
+    const pill = $("state-pill");
+    let cls = "ok", text = `Running · checked ${ago(loopAge)}`;
+    if (b.paused) { cls = "warn"; text = "Paused by a mod (kill switch on)"; }
+    else if (!b.running || loopAge > 180) { cls = "crit"; text = b.running ? `Stuck · last check ${ago(loopAge)}` : "Not running"; }
+    pill.className = "pill " + cls; $("state-text").textContent = text;
+    $("mode-chip").textContent = b.mode === "live" ? "Live" : "Dry run (not acting)";
+    $("ban-chip").textContent = b.confirm_all_bans ? "Every ban asks a mod" : "Instant bans for outsiders";
+    const stale = $("stale");
+    if (dataAge > 360) { stale.hidden = false; stale.textContent = `No update from the Studio for ${ago(dataAge).replace(" ago", "")}. The bot may be fine, but this page can't tell.`; }
+    else stale.hidden = true;
+    $("updated").textContent = `Status updated ${ago(dataAge)}. Refreshes every 2 minutes.`;
+
+    const t = data.today;
+    $("today-label").textContent = dfmt.format(new Date(data.generated * 1000));
+    for (const k of ["read", "flagged", "cleared", "removed", "queue", "asked", "banned"]) {
+      const td = $("c-" + k); td.textContent = (t[k] || 0).toLocaleString("en-US");
+      td.classList.toggle("zero", !t[k]); td.classList.toggle("hot", (k === "banned" || k === "asked") && t[k] > 0);
+    }
+
+    const w = data.pending || [];
+    $("wait-count").textContent = w.length ? `${w.length} waiting` : "";
+    $("waiting").innerHTML = w.length ? w.map(p => {
+      const left = 12 * 3600 - (now - p.since);
+      const len = p.length === "permanent" ? "permanently" : `for ${String(p.length || "").split("-")[0]} days`;
+      return `<article class="ask"><div class="top"><strong>Ban u/${esc(p.user)} ${esc(len)}?</strong><span class="rule">${esc(p.rule)} · ${esc(RULES[p.rule] || "")}</span></div>
+        <q>${esc(p.text)}</q><div class="meta">${esc(p.why)} · waiting ${esc(ago(now - p.since).replace(" ago", ""))}${left > 0 ? ` · no ban if nobody answers in ${esc(ago(left).replace(" ago", ""))}` : ""}</div>
+        <div class="btns">${p.modmail ? `<a class="btn primary" href="${esc(p.modmail)}" target="_blank" rel="noopener">Answer in modmail</a>` : ""}${p.link ? `<a class="btn" href="${esc(p.link)}" target="_blank" rel="noopener">View comment</a>` : ""}</div></article>`;
+    }).join("") : `<p class="empty">No bans are waiting on a mod.</p>`;
+
+    renderWeek(data.days || []);
+    renderLog();
+    const errs = data.errors || [];
+    $("errors").hidden = !errs.length;
+    $("errors-sum").textContent = `${errs.length} hiccup${errs.length === 1 ? "" : "s"} in the last 24 hours (the bot retries on its own)`;
+    $("errors-list").innerHTML = errs.map(e => `<li><time>${esc(tfmt.format(new Date(e.t * 1000)))}</time> · ${esc(e.where)}: ${esc(e.error)}</li>`).join("");
+  }
+
+  function renderWeek(days) {
+    const W = 560, H = 190, top = 22, bottom = 46, left = 8, right = 8;
+    const max = Math.max(4, ...days.map(d => Math.max(d.removed, d.queue)));
+    const slot = (W - left - right) / days.length, bw = Math.min(22, slot / 3.2);
+    const y = v => top + (H - top - bottom) * (1 - v / max);
+    const css = getComputedStyle(document.documentElement);
+    const col = n => css.getPropertyValue(n).trim();
+    let g = `<line x1="${left}" x2="${W - right}" y1="${y(0)}" y2="${y(0)}" stroke="${col("--line")}" stroke-width="1"/>`;
+    days.forEach((d, i) => {
+      const cx = left + slot * i + slot / 2;
+      [["removed", col("--crit"), -1], ["queue", col("--warn"), 1]].forEach(([k, c, s]) => {
+        const v = d[k] || 0, x = cx + s * (bw / 2 + 1) - bw / 2, yy = y(v);
+        g += `<rect x="${x}" y="${yy}" width="${bw}" height="${Math.max(0, y(0) - yy)}" rx="2" fill="${c}"/>`;
+        g += `<text x="${x + bw / 2}" y="${yy - 5}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="${col("--muted")}">${v}</text>`;
+      });
+      const dd = new Date(d.date + "T12:00:00Z");
+      g += `<text x="${cx}" y="${H - bottom + 17}" text-anchor="middle" font-family="Barlow, sans-serif" font-size="12" font-weight="600" fill="${col("--ink")}">${wfmt.format(dd)}</text>`;
+      g += `<text x="${cx}" y="${H - bottom + 32}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="${col("--muted")}">${d.read >= 1000 ? (d.read / 1000).toFixed(1) + "k" : d.read} read</text>`;
+    });
+    $("week").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Removals and mod-queue reports for the last 7 days">${g}</svg>`;
+  }
+
+  function renderLog() {
+    const now = Date.now() / 1000, today = dayKey(now);
+    const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired"].includes(e.kind) : e.kind === filter;
+    const items = (data.recent || []).filter(pick);
+    $("log").innerHTML = items.length ? items.map(e => {
+      const [cls, label] = KIND[e.kind] || ["report", e.kind];
+      const when = dayKey(e.t) === today ? tfmt.format(new Date(e.t * 1000)) : dfmt.format(new Date(e.t * 1000));
+      const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}` : e.kind === "ban_declined_by_mod" && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : "";
+      return `<li><time>${esc(when)}</time><div class="what"><span class="tag ${cls}">${esc(label)}</span>${e.rule ? `<span class="rule">${esc(e.rule)} · ${esc(RULES[e.rule] || "")}</span>` : ""}<span class="user">u/${esc(e.user || "?")}</span>${extra}</div>
+        ${e.text ? `<q>${esc(e.text)}</q>` : ""}${e.why ? `<div class="why">${esc(e.why)}</div>` : ""}
+        <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}</div></li>`;
+    }).join("") : `<li><p class="empty">${filter === "all" ? "Nothing needed doing yet. It's quiet out there." : "None of these in the last 7 days."}</p></li>`;
+  }
+
+  document.querySelectorAll(".filters button").forEach(bt => bt.addEventListener("click", () => {
+    filter = bt.dataset.f;
+    document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", String(x === bt)));
+    if (data) renderLog();
+  }));
+  $("unlock").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    pass = $("pass").value.trim(); key = null;
+    $("unlock-btn").disabled = true; $("gate-err").textContent = "";
+    await refresh(true);
+    $("unlock-btn").disabled = false;
+    if (!$("app").hidden) { store.set(pass); timer = setInterval(() => refresh(false), 120000); }
+  });
+  $("lock").addEventListener("click", () => { store.clear(); pass = null; key = null; data = null; showGate("Locked. Enter the passcode to open it again."); });
+  setInterval(() => { if (data && !$("app").hidden) render(); }, 30000);
+  const saved = store.get();
+  if (saved) { pass = saved; refresh(true).then(() => { if (!$("app").hidden) timer = setInterval(() => refresh(false), 120000); }); }
+  else $("pass").focus();
+})();
+</script>
+</body>
+</html>
