@@ -186,7 +186,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
       <div><span>Yesterday</span><b id="k-yday">—</b><em>&nbsp;</em></div>
       <div><span>Last 7 days</span><b id="k-week">—</b><em id="k-week-note"></em></div>
       <div><span>Per month at this pace</span><b id="k-rate">—</b><em id="k-rate-note"></em></div>
-      <div><span>Spent on this key</span><b id="k-key">—</b><em id="k-key-note"></em></div>
+      <div><span id="k-key-label">Spent on this key</span><b id="k-key">—</b><em id="k-key-note"></em></div>
     </div>
     <div class="split" id="k-split"></div>
     <div class="chart" id="k-chart"></div>
@@ -307,7 +307,8 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("costs").hidden = !OWNER;
     if (OWNER) renderCosts();
     const stale = $("stale");
-    if (dataAge > 360) { stale.hidden = false; stale.textContent = `No update from the Studio for ${ago(dataAge).replace(" ago", "")}. The bot may be fine, but this page can't tell.`; }
+    if (b.budget_out) { stale.hidden = false; stale.textContent = "The bot's AI budget for this month is used up, so it can't check comments until the budget resets. Alex has been notified on his owner view."; }
+    else if (dataAge > 360) { stale.hidden = false; stale.textContent = `No update from the Studio for ${ago(dataAge).replace(" ago", "")}. The bot may be fine, but this page can't tell.`; }
     else stale.hidden = true;
     $("updated").textContent = `Status updated ${ago(dataAge)}. Refreshes every 2 minutes.`;
 
@@ -349,8 +350,15 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("k-week-note").textContent = tracked.length < 7 ? `tracking since ${dfmt.format(new Date(costs.since + "T12:00:00Z"))}` : "";
     $("k-rate").textContent = money(costs.per_month);
     $("k-rate-note").textContent = costs.per_month == null ? "needs 2 full days of data" : `average of the last ${costs.full_days} full days`;
-    $("k-key").textContent = costs.key ? money(costs.key.usage) : "—";
-    $("k-key-note").textContent = costs.key && costs.key.limit ? `of the $${costs.key.limit} limit · includes testing` : "";
+    const k = costs.key, monthly = k && k.limit_reset === "monthly";
+    $("k-key-label").textContent = monthly ? "Spent this month" : "Spent on this key";
+    $("k-key").textContent = k ? money(monthly ? k.usage_monthly : k.usage) : "—";
+    $("k-key-note").textContent = !k || k.limit == null ? "" : monthly
+      ? `of the $${k.limit} monthly limit · ${money(k.limit_remaining)} left · includes testing`
+      : `of the $${k.limit} limit · includes testing`;
+    const over = k && k.limit != null && costs.per_month != null && costs.per_month > k.limit;
+    $("k-rate-note").textContent = costs.per_month == null ? "needs 2 full days of data" : `average of the last ${costs.full_days} full days` + (over ? " · over the monthly limit" : "");
+    $("k-rate-note").style.color = over ? "var(--crit)" : "";
     const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
     const parts = [["Fast pass", t.fast, col("--info")], ["Second look", t.second, col("--warn")], ["Ban checks", t.ban, col("--crit")]];
     const sum = parts.reduce((a, p) => a + p[1], 0);
