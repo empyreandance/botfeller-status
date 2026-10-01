@@ -100,9 +100,16 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .filters button { font: 600 13px/1 var(--body); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
 .filters button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.daynav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.daynav button { font: 600 13px/1 var(--body); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.daynav button:disabled { color: var(--muted); opacity: .45; cursor: default; }
+.dayname { text-align: center; display: grid; gap: 3px; min-width: 0; }
+.dayname strong { font: 600 17px/1.1 var(--display); letter-spacing: .02em; }
+.dayname span { color: var(--muted); font-size: 12px; }
 .log { list-style: none; margin: 0; padding: 0; }
 .log li { display: grid; grid-template-columns: 74px 1fr; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
 .log li:first-child { border-top: 0; }
+.log li > .empty { grid-column: 1 / -1; }
 .log time { color: var(--muted); font-size: 13px; padding-top: 2px; }
 .log .what { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tag { font: 700 11px/1 var(--body); letter-spacing: .07em; text-transform: uppercase; padding: 4px 7px; border-radius: 5px; }
@@ -205,13 +212,18 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   </div>
 
   <section class="panel" aria-labelledby="log-title">
-    <h2 id="log-title">Recent actions <small>newest first</small></h2>
+    <h2 id="log-title">Recent actions <small>one day per page, newest first</small></h2>
     <div class="filters" role="group" aria-label="Filter actions">
       <button type="button" data-f="all" aria-pressed="true">All</button>
       <button type="button" data-f="remove" aria-pressed="false">Removed</button>
       <button type="button" data-f="report" aria-pressed="false">Mod queue</button>
       <button type="button" data-f="ban" aria-pressed="false">Bans</button>
       <button type="button" data-f="cleared" aria-pressed="false">Cleared</button>
+    </div>
+    <div class="daynav" role="group" aria-label="Pick a day">
+      <button type="button" id="day-prev" aria-label="Earlier day">‹ Earlier</button>
+      <div class="dayname" aria-live="polite"><strong id="day-name"></strong><span id="day-count"></span></div>
+      <button type="button" id="day-next" aria-label="Later day">Later ›</button>
     </div>
     <ul class="log" id="log"></ul>
   </section>
@@ -246,7 +258,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const ago = s => s < 60 ? `${Math.max(0, Math.round(s))} sec ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min ago`;
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  let key = null, keySalt = null, pass = null, data = null, costs = null, blobAt = 0, filter = "all", timer = null;
+  let key = null, keySalt = null, pass = null, data = null, costs = null, blobAt = 0, filter = "all", timer = null, logDay = null;   // logDay null = follow the newest day
 
   const store = { get() { try { return localStorage.getItem(STORE); } catch { return null; } },
                   set(v) { try { localStorage.setItem(STORE, v); } catch {} },
@@ -402,20 +414,40 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("week").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Removals and mod-queue reports for the last 7 days">${g}</svg>`;
   }
 
+  const dayLabel = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "long", month: "short", day: "numeric" });
   function renderLog() {
     const now = Date.now() / 1000, today = dayKey(now);
+    const days = (data.days || []).map(d => d.date);
+    if (!days.length) days.push(today);
+    if (logDay && !days.includes(logDay)) logDay = null;
+    const day = logDay || days[days.length - 1], i = days.indexOf(day);
+    const yest = days.length > 1 ? days[days.length - 2] : null;
+    $("day-name").textContent = dayLabel.format(new Date(day + "T12:00:00Z"));
+    $("day-prev").disabled = i <= 0;
+    $("day-next").disabled = i >= days.length - 1;
     const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired"].includes(e.kind) : e.kind === filter;
-    const items = (data.recent || []).filter(pick);
+    const onDay = (data.recent || []).filter(e => dayKey(e.t) === day);
+    const items = onDay.filter(pick);
+    $("day-count").textContent = (day === today ? "Today · " : day === yest ? "Yesterday · " : "") + `${onDay.length} action${onDay.length === 1 ? "" : "s"}` + (filter === "all" ? "" : ` · ${items.length} shown`);
     $("log").innerHTML = items.length ? items.map(e => {
       const [cls, label] = KIND[e.kind] || ["report", e.kind];
-      const when = dayKey(e.t) === today ? tfmt.format(new Date(e.t * 1000)) : dfmt.format(new Date(e.t * 1000));
+      const when = tfmt.format(new Date(e.t * 1000));
       const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}` : e.kind === "ban_declined_by_mod" && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : "";
       return `<li><time>${esc(when)}</time><div class="what"><span class="tag ${cls}">${esc(label)}</span>${e.rule ? `<span class="rule">${esc(e.rule)} · ${esc(RULES[e.rule] || "")}</span>` : ""}<span class="user">u/${esc(e.user || "?")}</span>${extra}</div>
         ${e.text ? `<q>${esc(e.text)}</q>` : ""}${e.why ? `<div class="why">${esc(e.why)}</div>` : ""}
         <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}</div></li>`;
-    }).join("") : `<li><p class="empty">${filter === "all" ? "Nothing needed doing yet. It's quiet out there." : "None of these in the last 7 days."}</p></li>`;
+    }).join("") : `<li><p class="empty">${!onDay.length && !((data.days || []).find(x => x.date === day) || {}).read ? "The bot wasn't checking comments yet on this day." : filter === "all" ? (day === today ? "Nothing needed doing yet today. It's quiet out there." : "Nothing needed doing this day.") : "None of these on this day."}</p></li>`;
   }
 
+  function stepDay(n) {
+    const days = (data?.days || []).map(d => d.date);
+    if (!days.length) return;
+    const i = Math.min(days.length - 1, Math.max(0, days.indexOf(logDay || days[days.length - 1]) + n));
+    logDay = i === days.length - 1 ? null : days[i];
+    renderLog();
+  }
+  $("day-prev").addEventListener("click", () => stepDay(-1));
+  $("day-next").addEventListener("click", () => stepDay(1));
   document.querySelectorAll(".filters button").forEach(bt => bt.addEventListener("click", () => {
     filter = bt.dataset.f;
     document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", String(x === bt)));
