@@ -122,6 +122,9 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .tag.cleared { background: var(--ok-bg); color: var(--ok); }
 .rule { font: 500 12px/1 var(--mono); color: var(--muted); }
 .user { font-weight: 600; }
+.result { color: var(--warn); font-weight: 600; }
+.result.done { color: var(--ok); }
+.result.undo { color: var(--muted); }
 .log q { grid-column: 2; color: var(--ink); overflow-wrap: anywhere; }
 .log .why { grid-column: 2; color: var(--muted); font-size: 13px; }
 .log .links { grid-column: 2; display: flex; gap: 12px; font-size: 13px; }
@@ -249,7 +252,8 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     R7: "Rival fan taunting", R8: "Politics", R9: "Name change", R10: "Game-fixing claim", R11: "Playoff ticket sale", R12: "Banned insult",
     R13: "Pushing the line", R14: "Suicide joke", R15: "Told someone to kill themselves" };
   const KIND = { remove: ["remove", "Removed"], report: ["report", "Mod queue"], ban: ["ban", "Banned"], ask_mods: ["ask", "Asked mods"],
-    ban_declined_by_mod: ["declined", "Mod said no"], ban_expired: ["expired", "No answer, no ban"], cleared: ["cleared", "Cleared"] };
+    ban_declined_by_mod: ["declined", "Mod said no"], ban_expired: ["expired", "No answer, no ban"],
+    ban_handled_elsewhere: ["declined", "Handled on Reddit"], cleared: ["cleared", "Cleared"] };
   const $ = id => document.getElementById(id);
   const tz = "America/New_York";
   const tfmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
@@ -450,14 +454,15 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("day-name").textContent = dayLabel.format(new Date(day + "T12:00:00Z"));
     $("day-prev").disabled = i <= 0;
     $("day-next").disabled = i >= days.length - 1;
-    const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired"].includes(e.kind) : e.kind === filter;
+    const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired", "ban_handled_elsewhere"].includes(e.kind) : e.kind === filter;
     const onDay = (data.recent || []).filter(e => dayKey(e.t) === day);
     const items = onDay.filter(pick);
     $("day-count").textContent = (day === today ? "Today · " : day === yest ? "Yesterday · " : "") + `${onDay.length} action${onDay.length === 1 ? "" : "s"}` + (filter === "all" ? "" : ` · ${items.length} shown`);
     $("log").innerHTML = items.length ? items.map(e => {
       const [cls, label] = KIND[e.kind] || ["report", e.kind];
       const when = tfmt.format(new Date(e.t * 1000));
-      const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}` : e.kind === "ban_declined_by_mod" && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : "";
+      const after = e.result ? ` · <span class="result${!e.result_by ? "" : e.result === "unbanned" ? " undo" : " done"}">${esc(e.result)}${e.result_by ? ` by u/${esc(e.result_by)}` : ""}</span>` : "";
+      const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}${after}` : (e.kind === "ban_declined_by_mod" || e.kind === "ban_handled_elsewhere") && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : e.kind === "report" ? after : "";
       return `<li><time>${esc(when)}</time><div class="what"><span class="tag ${cls}">${esc(label)}</span>${e.rule ? `<span class="rule">${esc(e.rule)} · ${esc(RULES[e.rule] || "")}</span>` : ""}<span class="user">u/${esc(e.user || "?")}</span>${extra}</div>
         ${e.text ? `<q>${esc(e.text)}</q>` : ""}${e.why ? `<div class="why">${esc(e.why)}</div>` : ""}
         <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}</div></li>`;
