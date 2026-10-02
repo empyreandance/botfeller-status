@@ -185,7 +185,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
 
   <div class="linescore" role="region" aria-label="Today's numbers">
     <table>
-      <thead><tr><th scope="col">Today</th><th scope="col">Read</th><th scope="col">Flagged</th><th scope="col">Cleared</th><th scope="col">Removed</th><th scope="col">Queue</th><th scope="col" class="rhe">Asked</th><th scope="col">Banned</th></tr></thead>
+      <thead><tr><th scope="col">Today</th><th scope="col">Read</th><th scope="col">Flagged</th><th scope="col">Cleared</th><th scope="col">Removed</th><th scope="col" title="Bot reports still waiting in Reddit's mod queue">Queue</th><th scope="col" class="rhe" title="Ban requests waiting on a mod's answer">Waiting</th><th scope="col">Banned</th></tr></thead>
       <tbody><tr><td id="today-label">—</td><td id="c-read" class="num">0</td><td id="c-flagged" class="num">0</td><td id="c-cleared" class="num">0</td><td id="c-removed" class="num">0</td><td id="c-queue" class="num">0</td><td id="c-asked" class="num rhe">0</td><td id="c-banned" class="num">0</td></tr></tbody>
     </table>
   </div>
@@ -356,7 +356,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("today-label").textContent = dfmt.format(new Date(data.generated * 1000));
     for (const k of ["read", "flagged", "cleared", "removed", "queue", "asked", "banned"]) {
       const td = $("c-" + k); td.textContent = (t[k] || 0).toLocaleString("en-US");
-      td.classList.toggle("zero", !t[k]); td.classList.toggle("hot", (k === "banned" || k === "asked") && t[k] > 0);
+      td.classList.toggle("zero", !t[k]); td.classList.toggle("hot", (k === "banned" || k === "asked" || k === "queue") && t[k] > 0);
     }
 
     const w = data.pending || [];
