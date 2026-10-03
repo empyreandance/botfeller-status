@@ -128,7 +128,10 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .log q { grid-column: 2; color: var(--ink); overflow-wrap: anywhere; }
 .log .why { grid-column: 2; color: var(--muted); font-size: 13px; }
 .log .links { grid-column: 2; display: flex; gap: 12px; font-size: 13px; }
-.log .links a.approve { color: var(--ok); font-weight: 600; }
+.log .links { align-items: center; flex-wrap: wrap; }
+.approve-btn { font: 600 13px/1 var(--body); color: var(--ok); background: transparent; border: 1px solid var(--ok); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+.approve-btn:disabled { opacity: .6; cursor: default; }
+.approve-err { color: var(--crit); font-size: 12px; }
 @media (max-width: 480px) { .log li { grid-template-columns: 1fr; } .log q, .log .why, .log .links { grid-column: 1; } }
 
 /* owner-only cost panel */
@@ -263,8 +266,38 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   const dayKey = t => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(t * 1000));
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const ago = s => s < 60 ? `${Math.max(0, Math.round(s))} sec ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min ago`;
-  // Approve happens on Reddit itself (this page has no Reddit login); the bot sees the approval and drops its removal message
-  const canApprove = e => !!e.link && (e.kind === "remove" || (e.kind === "report" && !e.result_by));
+  // Approve: a request signed with a key derived from the team passcode goes to the bot's approve endpoint on the Studio
+  // (Tailscale Funnel); u/BotFeller approves the comment and drops its removal message. Only items the bot removed/reported.
+  const APPROVE_API = "https://alexs-mac-studio.tail4df488.ts.net/botfeller/approve";
+  const approvedNow = new Set();
+  let approveKey = null, approveKeyFor = null;
+  const canApprove = e => !!e.id && !!e.link && (e.kind === "remove" || (e.kind === "report" && e.result === "still in the mod queue"));
+  async function getApproveKey() {
+    if (approveKey && approveKeyFor === pass) return approveKey;
+    const enc = new TextEncoder();
+    const base = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+    approveKey = await crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode("botfeller-approve-v1"), iterations: 600000 },
+      base, { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign"]);
+    approveKeyFor = pass;
+    return approveKey;
+  }
+  async function approveComment(id, btn) {
+    const err = document.querySelector(`.approve-err[data-for="${id}"]`);
+    btn.disabled = true; btn.textContent = "Approving…"; if (err) err.textContent = "";
+    try {
+      const ts = Math.floor(Date.now() / 1000);
+      const sig = await crypto.subtle.sign("HMAC", await getApproveKey(), new TextEncoder().encode(`approve:${id}:${ts}`));
+      const hex = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, "0")).join("");
+      const r = await fetch(APPROVE_API, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ id, ts, sig: hex }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+      approvedNow.add(id);
+      renderLog();
+    } catch (ex) {
+      btn.disabled = false; btn.textContent = "Approve";
+      if (err) err.textContent = `Couldn't approve (${ex.message}). You can still approve it on Reddit.`;
+    }
+  }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   let key = null, keySalt = null, pass = null, data = null, costs = null, blobAt = 0, filter = "all", timer = null, logDay = null;   // logDay null = follow the newest day
 
@@ -464,13 +497,13 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("log").innerHTML = items.length ? items.map(e => {
       const [cls, label] = KIND[e.kind] || ["report", e.kind];
       const when = tfmt.format(new Date(e.t * 1000));
-      const after = e.result ? ` · <span class="result${!e.result_by ? "" : e.result === "unbanned" ? " undo" : " done"}">${esc(e.result)}${e.result_by ? ` by u/${esc(e.result_by)}` : ""}</span>` : "";
+      const after = e.result ? ` · <span class="result${e.result === "still in the mod queue" ? "" : e.result === "unbanned" ? " undo" : " done"}">${esc(e.result)}${e.result_by ? ` by u/${esc(e.result_by)}` : ""}</span>` : "";
       const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}${after}` : (e.kind === "ban_declined_by_mod" || e.kind === "ban_handled_elsewhere") && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : e.kind === "report" ? after : "";
       return `<li><time>${esc(when)}</time><div class="what"><span class="tag ${cls}">${esc(label)}</span>${e.rule ? `<span class="rule">${esc(e.rule)} · ${esc(RULES[e.rule] || "")}</span>` : ""}<span class="user">u/${esc(e.user || "?")}</span>${extra}</div>
         ${e.text ? `<q>${esc(e.text)}</q>` : ""}${e.why ? `<div class="why">${esc(e.why)}</div>` : ""}
-        <div class="links">${e.link ? (canApprove(e)
-          ? `<a class="approve" href="${esc(e.link)}" target="_blank" rel="noopener" title="Opens the comment on Reddit. Tap Approve there; the bot takes its removal message down within a couple of minutes.">Approve on Reddit</a>`
-          : `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>`) : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}</div></li>`;
+        <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}${!canApprove(e) ? ""
+          : approvedNow.has(e.id) ? `<span class="result done">Approved</span>`
+          : `<button type="button" class="approve-btn" data-id="${esc(e.id)}" title="u/BotFeller approves the comment and takes down its removal message.">Approve</button><span class="approve-err" data-for="${esc(e.id)}"></span>`}</div></li>`;
     }).join("") : `<li><p class="empty">${!onDay.length && !((data.days || []).find(x => x.date === day) || {}).read ? "The bot wasn't checking comments yet on this day." : filter === "all" ? (day === today ? "Nothing needed doing yet today. It's quiet out there." : "Nothing needed doing this day.") : "None of these on this day."}</p></li>`;
   }
 
@@ -481,6 +514,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     logDay = i === days.length - 1 ? null : days[i];
     renderLog();
   }
+  $("log").addEventListener("click", ev => { const b = ev.target.closest(".approve-btn"); if (b) approveComment(b.dataset.id, b); });
   $("day-prev").addEventListener("click", () => stepDay(-1));
   $("day-next").addEventListener("click", () => stepDay(1));
   document.querySelectorAll(".filters button").forEach(bt => bt.addEventListener("click", () => {
