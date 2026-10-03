@@ -490,12 +490,17 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("day-name").textContent = dayLabel.format(new Date(day + "T12:00:00Z"));
     $("day-prev").disabled = i <= 0;
     $("day-next").disabled = i >= days.length - 1;
-    const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired", "ban_handled_elsewhere"].includes(e.kind) : e.kind === filter;
+    const waiting = e => e.kind === "report" && e.result === "still in the mod queue";
+    const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired", "ban_handled_elsewhere"].includes(e.kind)
+      : filter === "report" ? waiting(e) : e.kind === filter;          // "Mod queue" = only what's still waiting there
     const onDay = (data.recent || []).filter(e => dayKey(e.t) === day);
     const items = onDay.filter(pick);
     $("day-count").textContent = (day === today ? "Today · " : day === yest ? "Yesterday · " : "") + `${onDay.length} action${onDay.length === 1 ? "" : "s"}` + (filter === "all" ? "" : ` · ${items.length} shown`);
     $("log").innerHTML = items.length ? items.map(e => {
-      const [cls, label] = KIND[e.kind] || ["report", e.kind];
+      // once a mod handles a reported comment, its tag says what happened instead of "Mod queue"
+      const [cls, label] = e.kind === "report" && e.result && !waiting(e)
+        ? (/removed/.test(e.result) ? ["remove", "Mod removed"] : /approved|kept/.test(e.result) ? ["cleared", "Mod approved"] : ["declined", "Handled"])
+        : KIND[e.kind] || ["report", e.kind];
       const when = tfmt.format(new Date(e.t * 1000));
       const after = e.result ? ` · <span class="result${e.result === "still in the mod queue" ? "" : e.result === "unbanned" ? " undo" : " done"}">${esc(e.result)}${e.result_by ? ` by u/${esc(e.result_by)}` : ""}</span>` : "";
       const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}${after}` : (e.kind === "ban_declined_by_mod" || e.kind === "ban_handled_elsewhere") && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : e.kind === "report" ? after : "";
@@ -504,7 +509,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
         <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}${!canApprove(e) ? ""
           : approvedNow.has(e.id) ? `<span class="result done">Approved</span>`
           : `<button type="button" class="approve-btn" data-id="${esc(e.id)}" title="u/BotFeller approves the comment and takes down its removal message.">Approve</button><span class="approve-err" data-for="${esc(e.id)}"></span>`}</div></li>`;
-    }).join("") : `<li><p class="empty">${!onDay.length && !((data.days || []).find(x => x.date === day) || {}).read ? "The bot wasn't checking comments yet on this day." : filter === "all" ? (day === today ? "Nothing needed doing yet today. It's quiet out there." : "Nothing needed doing this day.") : "None of these on this day."}</p></li>`;
+    }).join("") : `<li><p class="empty">${!onDay.length && !((data.days || []).find(x => x.date === day) || {}).read ? "The bot wasn't checking comments yet on this day." : filter === "all" ? (day === today ? "Nothing needed doing yet today. It's quiet out there." : "Nothing needed doing this day.") : filter === "report" ? "Nothing the bot reported is waiting in the mod queue." : "None of these on this day."}</p></li>`;
   }
 
   function stepDay(n) {
