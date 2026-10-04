@@ -189,7 +189,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
 
   <div class="linescore" role="region" aria-label="Today's numbers">
     <table>
-      <thead><tr><th scope="col">Today</th><th scope="col">Read</th><th scope="col">Flagged</th><th scope="col">Cleared</th><th scope="col">Removed</th><th scope="col" title="Bot reports still waiting in Reddit's mod queue">Queue</th><th scope="col" class="rhe" title="Ban requests waiting on a mod's answer">Waiting</th><th scope="col">Banned</th></tr></thead>
+      <thead><tr><th scope="col">Today</th><th scope="col">Read</th><th scope="col">Flagged</th><th scope="col">Cleared</th><th scope="col">Removed</th><th scope="col" title="Bot reports still waiting in Reddit's mod queue">Queue</th><th scope="col" class="rhe" title="Ban requests waiting for a mod's answer in modmail">Waiting</th><th scope="col">Banned</th></tr></thead>
       <tbody><tr><td id="today-label">—</td><td id="c-read" class="num">0</td><td id="c-flagged" class="num">0</td><td id="c-cleared" class="num">0</td><td id="c-removed" class="num">0</td><td id="c-queue" class="num">0</td><td id="c-asked" class="num rhe">0</td><td id="c-banned" class="num">0</td></tr></tbody>
     </table>
   </div>
@@ -209,7 +209,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
 
   <div class="row">
     <section class="panel" aria-labelledby="wait-title">
-      <h2 id="wait-title">Waiting on a mod <small id="wait-count"></small></h2>
+      <h2 id="wait-title">Ban requests in modmail <small id="wait-count"></small></h2>
       <div id="waiting"></div>
     </section>
     <section class="panel chart" aria-labelledby="week-title">
@@ -333,7 +333,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   function beat() {
     if (!alertN) return;
     alertPhase = !alertPhase;
-    document.title = alertPhase ? `🔴 ${alertN} ban${alertN === 1 ? "" : "s"} waiting · Mod Desk` : `(${alertN}) ${BASE_TITLE}`;
+    document.title = alertPhase ? `🔴 ${alertN} ban request${alertN === 1 ? "" : "s"} in modmail · Mod Desk` : `(${alertN}) ${BASE_TITLE}`;
     $("favicon").href = alertPhase ? ICONS.on : ICONS.off;
   }
   function setAlert(n) {
@@ -403,7 +403,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
       return `<article class="ask"><div class="top"><strong>Ban u/${esc(p.user)} ${esc(len)}?</strong><span class="rule">${esc(p.rule)} · ${esc(RULES[p.rule] || "")}</span></div>
         <q>${esc(p.text)}</q><div class="meta">${esc(p.why)} · waiting ${esc(ago(now - p.since).replace(" ago", ""))} · no time limit</div>
         <div class="btns">${p.modmail ? `<a class="btn primary" href="${esc(p.modmail)}" target="_blank" rel="noopener">Answer in modmail</a>` : ""}${p.link ? `<a class="btn" href="${esc(p.link)}" target="_blank" rel="noopener">View comment</a>` : ""}</div></article>`;
-    }).join("") : `<p class="empty">No bans are waiting on a mod.</p>`;
+    }).join("") : `<p class="empty">No ban requests are waiting in modmail.</p>`;
 
     renderWeek(data.days || []);
     renderLog();
