@@ -94,6 +94,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 
 /* 7-day chart */
 .chart svg { width: 100%; height: auto; display: block; }
+#week svg { max-width: 640px; margin: 0 auto; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 6px; }
 .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
 
@@ -163,16 +164,16 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .qclear span, .qstale span { color: var(--muted); font-size: 13px; }
 .qstale { display: grid; gap: 4px; padding: 6px 2px 12px; }
 .qstale strong { color: var(--warn); }
-.qbar { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); z-index: 10; display: flex; justify-content: center; align-items: center; min-height: 52px; border-radius: 12px; background: var(--crit); color: #fff; font: 700 17px/1 var(--display); letter-spacing: .05em; text-transform: uppercase; text-decoration: none; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
-@media (min-width: 761px) { .qbar { display: none !important; } }
 /* today strip */
 .today { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; background: var(--navy); color: var(--navy-ink); border-radius: 12px; padding: 12px 14px; }
 .today div { display: grid; gap: 2px; text-align: center; }
 .today b { font: 700 32px/1 var(--display); font-variant-numeric: tabular-nums; }
 .today span { font: 600 11px/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--navy-muted); }
 .today p { grid-column: 1 / -1; margin: 4px 0 0; text-align: center; color: var(--navy-muted); font-size: 12px; }
-.today p.cap { margin: 0 0 4px; font: 600 11px/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; }
-body.has-qbar { padding-bottom: 88px; }
+.filters button.has-work { border-color: var(--crit); color: var(--crit); }
+.filters button.has-work[aria-pressed="true"] { background: var(--crit); color: #fff; border-color: var(--crit); }
+.log li.opened { opacity: .55; }
+.log .why.deadline { color: var(--crit); font-weight: 600; }
 details.chart > summary { cursor: pointer; font: 700 18px/1.1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
 details.chart[open] > summary { margin-bottom: 10px; }
 
@@ -229,28 +230,27 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   </header>
   <div class="banner" id="stale" hidden></div>
 
-  <section class="panel queue" id="queue-card" aria-labelledby="queue-title">
-    <div class="qhead"><h2 id="queue-title">Waiting in the mod queue</h2>
-      <span class="qmeta"><span id="queue-meta"></span> · <button type="button" class="linkbtn" id="queue-refresh">Refresh</button></span></div>
-    <ul class="qlist" id="queue-list"></ul>
-    <a class="btn wide" href="https://www.reddit.com/r/ClevelandGuardians/about/modqueue" target="_blank" rel="noopener">Open the mod queue</a>
-  </section>
-
   <section class="today" aria-label="Today's numbers">
-    <p class="cap">Today so far · not work, just what the bot did</p>
     <div><b id="t-read">0</b><span>Read</span></div>
     <div><b id="t-removed">0</b><span>Removed</span></div>
-    <div><b id="t-queue">0</b><span>Sent to queue</span></div>
+    <div><b id="t-queue">0</b><span>Reported</span></div>
     <div><b id="t-bans">0</b><span>Bans</span></div>
     <p id="t-note"></p>
   </section>
 
+  <section class="panel chart" aria-labelledby="week-title">
+    <h2 id="week-title">Last 7 days <small>removed and reported</small></h2>
+    <div id="week"></div>
+    <div class="legend"><span style="--c: var(--crit)">Removed</span><span style="--c: var(--warn)">Reported to the mod queue</span></div>
+  </section>
+
   <section class="panel" aria-labelledby="log-title">
-    <h2 id="log-title">What the bot did <small>Record only. Nothing here needs you.</small></h2>
-    <div class="filters" role="group" aria-label="Filter the record">
+    <h2 id="log-title">Recent actions <small id="log-sub">one day per page, newest first</small></h2>
+    <div class="filters" role="group" aria-label="Filter actions">
       <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="modq" aria-pressed="false" id="tab-modq">Mod queue</button>
       <button type="button" data-f="remove" aria-pressed="false">Removed</button>
-      <button type="button" data-f="queue" aria-pressed="false">Sent to queue</button>
+      <button type="button" data-f="reported" aria-pressed="false">Reported</button>
       <button type="button" data-f="ban" aria-pressed="false">Bans</button>
     </div>
     <div class="daynav" role="group" aria-label="Pick a day">
@@ -274,15 +274,9 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     <div class="chart" id="k-chart"></div>
   </section>
 
-  <details class="panel chart" id="week-box">
-    <summary>Last 7 days</summary>
-    <div id="week"></div>
-    <div class="legend"><span style="--c: var(--crit)">Removed</span><span style="--c: var(--warn)">Sent to the mod queue</span></div>
-  </details>
 
   <details class="errors panel" id="errors" hidden><summary id="errors-sum"></summary><ul id="errors-list"></ul></details>
 
-  <a class="qbar" id="qbar" hidden href="https://www.reddit.com/r/ClevelandGuardians/about/modqueue" target="_blank" rel="noopener"></a>
   <footer>
     <span id="updated">Updates every 2 minutes.</span>
     <span>Data is encrypted; only the team passcode opens it. <button type="button" id="lock">Lock this device</button></span>
@@ -300,7 +294,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   const RULES = { R1: "Insult or call-out", R2: "Bigotry", R3: "Looks and bodies", R4: "Threat", R5: "Sexual comment", R6: "Streams or spam",
     R7: "Rival fan taunting", R8: "Politics", R9: "Name change", R10: "Game-fixing claim", R11: "Playoff ticket sale", R12: "Banned insult",
     R13: "Pushing the line", R14: "Suicide joke", R15: "Told someone to kill themselves" };
-  const KIND = { remove: ["remove", "Removed"], report: ["report", "Sent to queue"], ask_queue: ["ask", "Ban asked"], ban: ["ban", "Banned"],
+  const KIND = { remove: ["remove", "Removed"], report: ["report", "Reported"], ask_queue: ["ask", "Ban asked"], ban: ["ban", "Banned"],
     ask_mods: ["ask", "Ban asked (modmail)"], ban_declined_by_mod: ["declined", "Mod said no"], ban_expired: ["expired", "No answer, no ban"],
     ban_handled_elsewhere: ["declined", "Handled on Reddit"] };
   const QTAG = { ban: "Ban?", bot: "Bot report", user: "User report", filtered: "Filtered", modmail: "Ban? (modmail)" };
@@ -448,7 +442,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("t-queue").textContent = fmt(t.to_queue); $("t-bans").textContent = fmt(t.banned);
     $("t-note").textContent = `${fmt(t.flagged)} flagged by the fast pass · ${fmt(t.cleared)} cleared on a second look`;
 
-    renderQueue(now);
+    renderQueueCount(now);
 
     renderWeek(data.days || []);
     renderLog();
@@ -458,54 +452,43 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("errors-list").innerHTML = errs.map(e => `<li><time>${esc(tfmt.format(new Date(e.t * 1000)))}</time> · ${esc(e.where)}: ${esc(e.error)}</li>`).join("");
   }
 
-  function renderQueue(now) {
+  // the mod queue is a tab: Reddit's real queue, with a count on the tab and the tab-title flash
+  const queueFresh = (q, now) => !!q.checked && now - q.checked < 300;          // judged here, so an old status file can't say "clear"
+  function renderQueueCount(now) {
+    const q = data.queue || { items: [], total: 0, checked: 0 };
+    const fresh = queueFresh(q, now);
+    $("tab-modq").textContent = fresh ? `Mod queue · ${q.total || 0}` : "Mod queue · ?";
+    $("tab-modq").classList.toggle("has-work", fresh && (q.total || 0) > 0);
+    setAlert(fresh ? (q.items || []).filter(it => !opened.recent(it.id)).length + Math.max(0, (q.total || 0) - (q.items || []).length) : 0);
+  }
+  function queueRows(now) {
     const q = data.queue || { items: [], total: 0, checked: 0 };
     const items = q.items || [];
     const checked = q.checked ? ago(now - q.checked) : "never";
-    const fresh = !!q.checked && now - q.checked < 300;          // judged here, so an old status file can't say "clear"
-    $("queue-meta").textContent = `${q.total || 0} · checked ${checked}` + (q.pending_modmail ? ` · plus ${q.pending_modmail} old ban request${q.pending_modmail > 1 ? "s" : ""} in modmail` : "");
-    if (!fresh) {
-      $("queue-list").innerHTML = `<li class="qstale"><strong>Can't confirm the mod queue right now (last checked ${esc(checked)}).</strong><span>Check it in Reddit.</span></li>`;
-    } else if (!items.length) {
-      $("queue-list").innerHTML = `<li class="qclear"><strong>Mod queue is clear. Nothing needs you right now.</strong><span>Checked ${esc(q.checked ? tfmt.format(new Date(q.checked * 1000)) : "—")}. Anything that needs a mod shows up here and in Reddit's mod queue.</span></li>`;
-    } else {
-      $("queue-list").innerHTML = items.map(it => {
-        const seen = opened.recent(it.id);
-        const age = it.t ? ago(now - it.t) : "";
-        return `<li class="qrow ${esc(it.type)}${seen ? " opened" : ""}">
-          <div class="top"><span class="tag q-${esc(it.type)}">${esc(QTAG[it.type] || it.type)}</span><span class="user">u/${esc(it.user || "?")}</span>${age ? `<span class="age">${esc(age)}</span>` : ""}</div>
-          ${it.text ? `<q>${esc(it.text)}</q>` : ""}
-          <div class="ask-line">${esc(it.ask || "")}</div>
-          ${it.reason ? `<div class="answers">Why a mod: ${esc(it.reason)}</div>` : ""}
-          ${it.answers ? `<div class="answers">${esc(it.answers)}</div>` : ""}
-          ${it.deadline ? `<div class="deadline">${esc(it.deadline)}</div>` : ""}
-          ${it.link ? `<a class="open-btn" data-open="${esc(it.id)}" href="${esc(it.link)}" target="_blank" rel="noopener">${seen ? "Opened · clears when Reddit shows it handled" : it.type === "modmail" ? "Answer in modmail" : "Open in Reddit"}</a>` : ""}
-        </li>`;
-      }).join("") + (q.total > items.length ? `<li class="age">${q.total - items.length} more in Reddit's mod queue.</li>` : "");
-    }
-    const waiting = fresh ? items.filter(it => !opened.recent(it.id)).length + Math.max(0, (q.total || 0) - items.length) : 0;
-    setAlert(waiting);
-    $("qbar").textContent = `${q.total} in the mod queue · Open`;
-    queueCount = fresh ? (q.total || 0) : 0;
-    updateBar();
+    $("day-count").textContent = "";
+    $("log-sub").innerHTML = `live from Reddit · checked ${esc(checked)} · <button type="button" class="linkbtn" id="queue-refresh">Refresh</button>`;
+    if (!queueFresh(q, now)) return `<li><p class="empty">Can't confirm the mod queue right now (last checked ${esc(checked)}). <a href="${MODQUEUE}" target="_blank" rel="noopener">Check it in Reddit.</a></p></li>`;
+    if (!items.length) return `<li><p class="empty">The mod queue is empty.</p></li>`;
+    return items.map(it => {
+      const seen = opened.recent(it.id);
+      return `<li class="${seen ? "opened" : ""}"><time>${esc(it.t ? ago(now - it.t).replace(" ago", "") : "")}</time><div class="what"><span class="tag q-${esc(it.type)}">${esc(QTAG[it.type] || it.type)}</span>${it.rule ? `<span class="rule">${esc(RULES[it.rule] || it.rule)}</span>` : ""}<span class="user">u/${esc(it.user || "?")}</span></div>
+        ${it.text ? `<q>${esc(it.text)}</q>` : ""}<div class="why">${esc(it.ask || "")}${it.reason ? ` · ${esc(it.reason)}` : ""}</div>
+        ${it.answers ? `<div class="why">${esc(it.answers)}</div>` : ""}${it.deadline ? `<div class="why deadline">${esc(it.deadline)}</div>` : ""}
+        <div class="links">${it.link ? `<a data-open="${esc(it.id)}" href="${esc(it.link)}" target="_blank" rel="noopener">${seen ? "Opened · clears when Reddit shows it handled" : "Open in Reddit"}</a>` : ""}</div></li>`;
+    }).join("") + (q.total > items.length ? `<li><p class="empty">${q.total - items.length} more in <a href="${MODQUEUE}" target="_blank" rel="noopener">Reddit's mod queue</a>.</p></li>` : "")
+      + `<li><p class="empty"><a href="${MODQUEUE}" target="_blank" rel="noopener">Open the whole mod queue in Reddit</a></p></li>`;
   }
-  let queueCount = 0, cardOnScreen = true;
-  function updateBar() { $("qbar").hidden = !queueCount || cardOnScreen; document.body.classList.toggle("has-qbar", !$("qbar").hidden); }
-  try {
-    new IntersectionObserver(es => { cardOnScreen = es.some(e => e.isIntersecting); updateBar(); }).observe($("queue-card"));
-  } catch {}
-  $("queue-list").addEventListener("click", ev => {
+  $("log").addEventListener("click", ev => {
     const a = ev.target.closest("[data-open]");
     if (a) { opened.add([a.dataset.open]); setTimeout(() => data && render(), 50); }
+    if (ev.target.closest("#queue-refresh")) freshen(true);
   });
-  $("qbar").addEventListener("click", () => { opened.add(((data && data.queue && data.queue.items) || []).map(it => it.id)); setTimeout(() => data && render(), 50); });
   let lastFetch = 0;
   async function freshen(force) {
     if (!data || $("app").hidden || (!force && Date.now() - lastFetch < 30000)) return;
     lastFetch = Date.now();
     await refresh(false);
   }
-  $("queue-refresh").addEventListener("click", () => freshen(true));
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") freshen(false); });
   window.addEventListener("pageshow", () => freshen(false));
 
@@ -583,12 +566,16 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     if (logDay && !days.includes(logDay)) logDay = null;
     const day = logDay || days[days.length - 1], i = days.indexOf(day);
     const yest = days.length > 1 ? days[days.length - 2] : null;
+    const modq = filter === "modq";
+    document.querySelector(".daynav").hidden = modq;
+    if (modq) { $("log").innerHTML = queueRows(now); return; }
+    $("log-sub").textContent = "one day per page, newest first";
     $("day-name").textContent = dayLabel.format(new Date(day + "T12:00:00Z"));
     $("day-prev").disabled = i <= 0;
     $("day-next").disabled = i >= days.length - 1;
     const isBan = e => ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired", "ban_handled_elsewhere"].includes(e.kind) || (e.kind === "ask_queue" && /^Banned/.test(e.result || ""));
     const pick = e => filter === "all" ? true : filter === "remove" ? e.kind === "remove"
-      : filter === "queue" ? ["report", "ask_queue", "ask_mods"].includes(e.kind) : filter === "ban" ? isBan(e) : true;
+      : filter === "reported" ? ["report", "ask_queue", "ask_mods"].includes(e.kind) : filter === "ban" ? isBan(e) : true;
     const onDay = (data.recent || []).filter(e => dayKey(e.t) === day);
     const items = onDay.filter(pick);
     $("day-count").textContent = (day === today ? "Today · " : day === yest ? "Yesterday · " : "") + `${onDay.length} action${onDay.length === 1 ? "" : "s"}` + (filter === "all" ? "" : ` · ${items.length} shown`);
