@@ -134,6 +134,48 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .approve-err { color: var(--crit); font-size: 12px; }
 @media (max-width: 480px) { .log li { grid-template-columns: 1fr; } .log q, .log .why, .log .links { grid-column: 1; } }
 
+
+/* the to-do list: Reddit's mod queue */
+.queue { border-width: 2px; }
+.qhead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; margin-bottom: 10px; }
+.qhead h2 { margin: 0; }
+.qmeta { color: var(--muted); font-size: 13px; }
+.linkbtn { font: 600 13px/1 var(--body); background: none; border: 0; color: var(--info); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.qlist { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 10px; }
+.qrow { border: 1px solid var(--line); border-left: 5px solid var(--muted); border-radius: 10px; padding: 12px; display: grid; gap: 6px; background: var(--surface-2); }
+.qrow.ban, .qrow.modmail { border-left-color: var(--crit); } .qrow.bot { border-left-color: var(--warn); }
+.qrow.opened { opacity: .55; }
+.qrow .top { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.qrow q { color: var(--ink); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.qrow .ask-line { font-weight: 600; }
+.qrow .answers { font-size: 13px; color: var(--ink); }
+.qrow .deadline { font-size: 13px; color: var(--crit); font-weight: 600; }
+.qrow .age { color: var(--muted); font-size: 12px; }
+.tag.q-ban, .tag.q-modmail { background: var(--crit); color: #fff; }
+.tag.q-bot { background: var(--warn-bg); color: var(--warn); }
+.tag.q-user, .tag.q-filtered { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+.open-btn { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 10px; background: var(--navy); color: var(--navy-ink); font: 700 16px/1 var(--display); letter-spacing: .05em; text-transform: uppercase; text-decoration: none; }
+.qrow.opened .open-btn { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+.btn.wide { display: flex; justify-content: center; min-height: 44px; align-items: center; }
+.qclear { display: grid; gap: 4px; padding: 6px 2px 12px; }
+.qclear strong { color: var(--ok); font: 700 20px/1.2 var(--display); letter-spacing: .02em; }
+.qclear strong::before { content: "✓ "; }
+.qclear span, .qstale span { color: var(--muted); font-size: 13px; }
+.qstale { display: grid; gap: 4px; padding: 6px 2px 12px; }
+.qstale strong { color: var(--warn); }
+.qbar { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); z-index: 10; display: flex; justify-content: center; align-items: center; min-height: 52px; border-radius: 12px; background: var(--crit); color: #fff; font: 700 17px/1 var(--display); letter-spacing: .05em; text-transform: uppercase; text-decoration: none; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+@media (min-width: 761px) { .qbar { display: none !important; } }
+/* today strip */
+.today { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; background: var(--navy); color: var(--navy-ink); border-radius: 12px; padding: 12px 14px; }
+.today div { display: grid; gap: 2px; text-align: center; }
+.today b { font: 700 32px/1 var(--display); font-variant-numeric: tabular-nums; }
+.today span { font: 600 11px/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--navy-muted); }
+.today p { grid-column: 1 / -1; margin: 4px 0 0; text-align: center; color: var(--navy-muted); font-size: 12px; }
+.today p.cap { margin: 0 0 4px; font: 600 11px/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; }
+body.has-qbar { padding-bottom: 88px; }
+details.chart > summary { cursor: pointer; font: 700 18px/1.1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
+details.chart[open] > summary { margin-bottom: 10px; }
+
 /* owner-only cost panel */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .tiles div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
@@ -187,12 +229,37 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   </header>
   <div class="banner" id="stale" hidden></div>
 
-  <div class="linescore" role="region" aria-label="Today's numbers">
-    <table>
-      <thead><tr><th scope="col">Today</th><th scope="col">Read</th><th scope="col">Flagged</th><th scope="col">Cleared</th><th scope="col">Removed</th><th scope="col" title="Bot reports still waiting in Reddit's mod queue">Queue</th><th scope="col" class="rhe" title="Ban requests waiting for a mod's answer in modmail">Waiting</th><th scope="col">Banned</th></tr></thead>
-      <tbody><tr><td id="today-label">—</td><td id="c-read" class="num">0</td><td id="c-flagged" class="num">0</td><td id="c-cleared" class="num">0</td><td id="c-removed" class="num">0</td><td id="c-queue" class="num">0</td><td id="c-asked" class="num rhe">0</td><td id="c-banned" class="num">0</td></tr></tbody>
-    </table>
-  </div>
+  <section class="panel queue" id="queue-card" aria-labelledby="queue-title">
+    <div class="qhead"><h2 id="queue-title">Waiting in the mod queue</h2>
+      <span class="qmeta"><span id="queue-meta"></span> · <button type="button" class="linkbtn" id="queue-refresh">Refresh</button></span></div>
+    <ul class="qlist" id="queue-list"></ul>
+    <a class="btn wide" href="https://www.reddit.com/r/ClevelandGuardians/about/modqueue" target="_blank" rel="noopener">Open the mod queue</a>
+  </section>
+
+  <section class="today" aria-label="Today's numbers">
+    <p class="cap">Today so far · not work, just what the bot did</p>
+    <div><b id="t-read">0</b><span>Read</span></div>
+    <div><b id="t-removed">0</b><span>Removed</span></div>
+    <div><b id="t-queue">0</b><span>Sent to queue</span></div>
+    <div><b id="t-bans">0</b><span>Bans</span></div>
+    <p id="t-note"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="log-title">
+    <h2 id="log-title">What the bot did <small>Record only. Nothing here needs you.</small></h2>
+    <div class="filters" role="group" aria-label="Filter the record">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="remove" aria-pressed="false">Removed</button>
+      <button type="button" data-f="queue" aria-pressed="false">Sent to queue</button>
+      <button type="button" data-f="ban" aria-pressed="false">Bans</button>
+    </div>
+    <div class="daynav" role="group" aria-label="Pick a day">
+      <button type="button" id="day-prev" aria-label="Earlier day">‹ Earlier</button>
+      <div class="dayname" aria-live="polite"><strong id="day-name"></strong><span id="day-count"></span></div>
+      <button type="button" id="day-next" aria-label="Later day">Later ›</button>
+    </div>
+    <ul class="log" id="log"></ul>
+  </section>
 
   <section class="panel costs" id="costs" hidden aria-labelledby="cost-title">
     <h2 id="cost-title">AI cost <small>only on your owner link</small></h2>
@@ -207,37 +274,15 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     <div class="chart" id="k-chart"></div>
   </section>
 
-  <div class="row">
-    <section class="panel" aria-labelledby="wait-title">
-      <h2 id="wait-title">Ban requests in modmail <small id="wait-count"></small></h2>
-      <div id="waiting"></div>
-    </section>
-    <section class="panel chart" aria-labelledby="week-title">
-      <h2 id="week-title">Last 7 days <small>removals and mod-queue reports</small></h2>
-      <div id="week"></div>
-      <div class="legend"><span style="--c: var(--crit)">Removed</span><span style="--c: var(--warn)">Sent to the mod queue</span></div>
-    </section>
-  </div>
-
-  <section class="panel" aria-labelledby="log-title">
-    <h2 id="log-title">Recent actions <small>one day per page, newest first</small></h2>
-    <div class="filters" role="group" aria-label="Filter actions">
-      <button type="button" data-f="all" aria-pressed="true">All</button>
-      <button type="button" data-f="remove" aria-pressed="false">Removed</button>
-      <button type="button" data-f="report" aria-pressed="false">Mod queue</button>
-      <button type="button" data-f="ban" aria-pressed="false">Bans</button>
-      <button type="button" data-f="cleared" aria-pressed="false">Cleared</button>
-    </div>
-    <div class="daynav" role="group" aria-label="Pick a day">
-      <button type="button" id="day-prev" aria-label="Earlier day">‹ Earlier</button>
-      <div class="dayname" aria-live="polite"><strong id="day-name"></strong><span id="day-count"></span></div>
-      <button type="button" id="day-next" aria-label="Later day">Later ›</button>
-    </div>
-    <ul class="log" id="log"></ul>
-  </section>
+  <details class="panel chart" id="week-box">
+    <summary>Last 7 days</summary>
+    <div id="week"></div>
+    <div class="legend"><span style="--c: var(--crit)">Removed</span><span style="--c: var(--warn)">Sent to the mod queue</span></div>
+  </details>
 
   <details class="errors panel" id="errors" hidden><summary id="errors-sum"></summary><ul id="errors-list"></ul></details>
 
+  <a class="qbar" id="qbar" hidden href="https://www.reddit.com/r/ClevelandGuardians/about/modqueue" target="_blank" rel="noopener"></a>
   <footer>
     <span id="updated">Updates every 2 minutes.</span>
     <span>Data is encrypted; only the team passcode opens it. <button type="button" id="lock">Lock this device</button></span>
@@ -255,9 +300,16 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   const RULES = { R1: "Insult or call-out", R2: "Bigotry", R3: "Looks and bodies", R4: "Threat", R5: "Sexual comment", R6: "Streams or spam",
     R7: "Rival fan taunting", R8: "Politics", R9: "Name change", R10: "Game-fixing claim", R11: "Playoff ticket sale", R12: "Banned insult",
     R13: "Pushing the line", R14: "Suicide joke", R15: "Told someone to kill themselves" };
-  const KIND = { remove: ["remove", "Removed"], report: ["report", "Mod queue"], ban: ["ban", "Banned"], ask_mods: ["ask", "Asked mods"],
-    ban_declined_by_mod: ["declined", "Mod said no"], ban_expired: ["expired", "No answer, no ban"],
-    ban_handled_elsewhere: ["declined", "Handled on Reddit"], cleared: ["cleared", "Cleared"] };
+  const KIND = { remove: ["remove", "Removed"], report: ["report", "Sent to queue"], ask_queue: ["ask", "Ban asked"], ban: ["ban", "Banned"],
+    ask_mods: ["ask", "Ban asked (modmail)"], ban_declined_by_mod: ["declined", "Mod said no"], ban_expired: ["expired", "No answer, no ban"],
+    ban_handled_elsewhere: ["declined", "Handled on Reddit"] };
+  const QTAG = { ban: "Ban?", bot: "Bot report", user: "User report", filtered: "Filtered", modmail: "Ban? (modmail)" };
+  const MODQUEUE = "https://www.reddit.com/r/ClevelandGuardians/about/modqueue";
+  // rows a mod opened on THIS device stop counting toward the flash for 3 minutes (Reddit's copy lags a little)
+  const OPENED = "botfeller-opened";
+  const opened = { all() { try { return JSON.parse(localStorage.getItem(OPENED) || "{}"); } catch { return {}; } },
+                   add(ids) { try { const o = this.all(), t = Date.now(); ids.forEach(i => o[i] = t); localStorage.setItem(OPENED, JSON.stringify(o)); } catch {} },
+                   recent(id) { const t = this.all()[id]; return !!t && Date.now() - t < 360000; } };   // 6 min: longer than the data delay
   const $ = id => document.getElementById(id);
   const tz = "America/New_York";
   const tfmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
@@ -271,7 +323,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   const APPROVE_API = "https://alexs-mac-studio.tail4df488.ts.net/botfeller/approve";
   const approvedNow = new Set();
   let approveKey = null, approveKeyFor = null;
-  const canApprove = e => !!e.id && !!e.link && (e.kind === "remove" || (e.kind === "report" && e.result === "still in the mod queue"));
+  const canApprove = e => !!e.id && !!e.link && e.kind === "remove";      // the undo for a bot removal; queue items are decided in the queue
   async function getApproveKey() {
     if (approveKey && approveKeyFor === pass) return approveKey;
     const enc = new TextEncoder();
@@ -295,7 +347,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
       renderLog();
     } catch (ex) {
       btn.disabled = false; btn.textContent = "Approve";
-      if (err) err.textContent = `Couldn't approve (${ex.message}). You can still approve it on Reddit.`;
+      if (err) err.textContent = `Couldn't approve (${ex.message}). Approve it in Reddit instead.`;
     }
   }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -324,7 +376,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     return JSON.parse(new TextDecoder().decode(pt));
   }
 
-  // Tab alert: while a ban waits on a mod, the tab's title and icon flash once a second. A Worker keeps the beat,
+  // Tab alert: while anything waits in Reddit's mod queue, the tab's title and icon flash once a second. A Worker keeps the beat,
   // because browsers slow a background tab's own timers to about once a minute, which would stop the flashing.
   const ICON = (bg, txt, dot) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${bg}"/><text x="32" y="46" font-family="Arial,Helvetica,sans-serif" font-size="40" font-weight="700" fill="#fff" text-anchor="middle">${txt}</text>${dot ? `<circle cx="50" cy="14" r="12" fill="#c8102e" stroke="#fff" stroke-width="4"/>` : ""}</svg>`);
   const ICONS = { calm: ICON("#0c2340", "B"), on: ICON("#c8102e", "!"), off: ICON("#0c2340", "B", true) };
@@ -333,7 +385,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   function beat() {
     if (!alertN) return;
     alertPhase = !alertPhase;
-    document.title = alertPhase ? `🔴 ${alertN} ban request${alertN === 1 ? "" : "s"} in modmail · Mod Desk` : `(${alertN}) ${BASE_TITLE}`;
+    document.title = alertPhase ? `🔴 ${alertN} IN THE MOD QUEUE · Mod Desk` : `(${alertN}) ${BASE_TITLE}`;
     $("favicon").href = alertPhase ? ICONS.on : ICONS.off;
   }
   function setAlert(n) {
@@ -353,6 +405,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("pass").value = ""; $("pass").focus();
   }
   async function refresh(first) {
+    lastFetch = Date.now();
     try {
       const blob = await fetchBlob();
       data = await open(blob);
@@ -374,12 +427,13 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     const loopAge = now - b.last_loop, dataAge = now - blobAt;
     const pill = $("state-pill");
     const gap = data.generated - b.last_loop;
-    let cls = "ok", text = "Running · checks every 10 sec";
-    if (b.paused) { cls = "warn"; text = "Paused by a mod (kill switch on)"; }
-    else if (!b.running || gap > 180) { cls = "crit"; text = b.running ? `Stuck · last check ${ago(loopAge)}` : "Not running"; }
+    let cls = "ok", text = "BotFeller is running · checks every 10 sec";
+    if (b.paused) { cls = "warn"; text = "BotFeller is paused · no comments are being checked"; }
+    else if (!b.running || gap > 180) { cls = "crit"; text = `BotFeller is down · nothing checked since ${tfmt.format(new Date(b.last_loop * 1000))}`; }
     pill.className = "pill " + cls; $("state-text").textContent = text;
-    $("mode-chip").textContent = b.mode === "live" ? "Live" : "Dry run (not acting)";
-    $("ban-chip").textContent = (b.confirm_all_bans ? "Every ban asks a mod" : "Instant bans for outsiders") + (OWNER ? " · Owner view" : "");
+    $("mode-chip").hidden = b.mode === "live"; $("mode-chip").textContent = "Dry run · the bot isn't acting";
+    $("ban-chip").hidden = !b.confirm_all_bans && !OWNER;
+    $("ban-chip").textContent = [b.confirm_all_bans ? "Every ban waits for a mod" : "", OWNER ? "Owner view" : ""].filter(Boolean).join(" · ");
     $("costs").hidden = !OWNER;
     if (OWNER) renderCosts();
     const stale = $("stale");
@@ -388,22 +442,13 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     else stale.hidden = true;
     $("updated").textContent = `Status updated ${ago(dataAge)}. Refreshes every 2 minutes.`;
 
-    const t = data.today;
-    $("today-label").textContent = dfmt.format(new Date(data.generated * 1000));
-    for (const k of ["read", "flagged", "cleared", "removed", "queue", "asked", "banned"]) {
-      const td = $("c-" + k); td.textContent = (t[k] || 0).toLocaleString("en-US");
-      td.classList.toggle("zero", !t[k]); td.classList.toggle("hot", (k === "banned" || k === "asked" || k === "queue") && t[k] > 0);
-    }
+    const t = data.today || {};
+    const fmt = n => (n || 0).toLocaleString("en-US");
+    $("t-read").textContent = fmt(t.read); $("t-removed").textContent = fmt(t.removed);
+    $("t-queue").textContent = fmt(t.to_queue); $("t-bans").textContent = fmt(t.banned);
+    $("t-note").textContent = `${fmt(t.flagged)} flagged by the fast pass · ${fmt(t.cleared)} cleared on a second look`;
 
-    const w = data.pending || [];
-    setAlert(w.length);
-    $("wait-count").textContent = w.length ? `${w.length} waiting` : "";
-    $("waiting").innerHTML = w.length ? w.map(p => {
-      const len = p.length === "permanent" ? "permanently" : `for ${String(p.length || "").split("-")[0]} days`;
-      return `<article class="ask"><div class="top"><strong>Ban u/${esc(p.user)} ${esc(len)}?</strong><span class="rule">${esc(p.rule)} · ${esc(RULES[p.rule] || "")}</span></div>
-        <q>${esc(p.text)}</q><div class="meta">${esc(p.why)} · waiting ${esc(ago(now - p.since).replace(" ago", ""))} · no time limit</div>
-        <div class="btns">${p.modmail ? `<a class="btn primary" href="${esc(p.modmail)}" target="_blank" rel="noopener">Answer in modmail</a>` : ""}${p.link ? `<a class="btn" href="${esc(p.link)}" target="_blank" rel="noopener">View comment</a>` : ""}</div></article>`;
-    }).join("") : `<p class="empty">No ban requests are waiting in modmail.</p>`;
+    renderQueue(now);
 
     renderWeek(data.days || []);
     renderLog();
@@ -412,6 +457,57 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("errors-sum").textContent = `${errs.length} hiccup${errs.length === 1 ? "" : "s"} in the last 24 hours (the bot retries on its own)`;
     $("errors-list").innerHTML = errs.map(e => `<li><time>${esc(tfmt.format(new Date(e.t * 1000)))}</time> · ${esc(e.where)}: ${esc(e.error)}</li>`).join("");
   }
+
+  function renderQueue(now) {
+    const q = data.queue || { items: [], total: 0, checked: 0 };
+    const items = q.items || [];
+    const checked = q.checked ? ago(now - q.checked) : "never";
+    const fresh = !!q.checked && now - q.checked < 300;          // judged here, so an old status file can't say "clear"
+    $("queue-meta").textContent = `${q.total || 0} · checked ${checked}` + (q.pending_modmail ? ` · plus ${q.pending_modmail} old ban request${q.pending_modmail > 1 ? "s" : ""} in modmail` : "");
+    if (!fresh) {
+      $("queue-list").innerHTML = `<li class="qstale"><strong>Can't confirm the mod queue right now (last checked ${esc(checked)}).</strong><span>Check it in Reddit.</span></li>`;
+    } else if (!items.length) {
+      $("queue-list").innerHTML = `<li class="qclear"><strong>Mod queue is clear. Nothing needs you right now.</strong><span>Checked ${esc(q.checked ? tfmt.format(new Date(q.checked * 1000)) : "—")}. Anything that needs a mod shows up here and in Reddit's mod queue.</span></li>`;
+    } else {
+      $("queue-list").innerHTML = items.map(it => {
+        const seen = opened.recent(it.id);
+        const age = it.t ? ago(now - it.t) : "";
+        return `<li class="qrow ${esc(it.type)}${seen ? " opened" : ""}">
+          <div class="top"><span class="tag q-${esc(it.type)}">${esc(QTAG[it.type] || it.type)}</span><span class="user">u/${esc(it.user || "?")}</span>${age ? `<span class="age">${esc(age)}</span>` : ""}</div>
+          ${it.text ? `<q>${esc(it.text)}</q>` : ""}
+          <div class="ask-line">${esc(it.ask || "")}</div>
+          ${it.reason ? `<div class="answers">Why a mod: ${esc(it.reason)}</div>` : ""}
+          ${it.answers ? `<div class="answers">${esc(it.answers)}</div>` : ""}
+          ${it.deadline ? `<div class="deadline">${esc(it.deadline)}</div>` : ""}
+          ${it.link ? `<a class="open-btn" data-open="${esc(it.id)}" href="${esc(it.link)}" target="_blank" rel="noopener">${seen ? "Opened · clears when Reddit shows it handled" : it.type === "modmail" ? "Answer in modmail" : "Open in Reddit"}</a>` : ""}
+        </li>`;
+      }).join("") + (q.total > items.length ? `<li class="age">${q.total - items.length} more in Reddit's mod queue.</li>` : "");
+    }
+    const waiting = fresh ? items.filter(it => !opened.recent(it.id)).length + Math.max(0, (q.total || 0) - items.length) : 0;
+    setAlert(waiting);
+    $("qbar").textContent = `${q.total} in the mod queue · Open`;
+    queueCount = fresh ? (q.total || 0) : 0;
+    updateBar();
+  }
+  let queueCount = 0, cardOnScreen = true;
+  function updateBar() { $("qbar").hidden = !queueCount || cardOnScreen; document.body.classList.toggle("has-qbar", !$("qbar").hidden); }
+  try {
+    new IntersectionObserver(es => { cardOnScreen = es.some(e => e.isIntersecting); updateBar(); }).observe($("queue-card"));
+  } catch {}
+  $("queue-list").addEventListener("click", ev => {
+    const a = ev.target.closest("[data-open]");
+    if (a) { opened.add([a.dataset.open]); setTimeout(() => data && render(), 50); }
+  });
+  $("qbar").addEventListener("click", () => { opened.add(((data && data.queue && data.queue.items) || []).map(it => it.id)); setTimeout(() => data && render(), 50); });
+  let lastFetch = 0;
+  async function freshen(force) {
+    if (!data || $("app").hidden || (!force && Date.now() - lastFetch < 30000)) return;
+    lastFetch = Date.now();
+    await refresh(false);
+  }
+  $("queue-refresh").addEventListener("click", () => freshen(true));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") freshen(false); });
+  window.addEventListener("pageshow", () => freshen(false));
 
   function renderCosts() {
     const money = v => v == null ? "—" : v < 1 ? "$" + v.toFixed(3) : "$" + v.toFixed(2);
@@ -490,26 +586,23 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     $("day-name").textContent = dayLabel.format(new Date(day + "T12:00:00Z"));
     $("day-prev").disabled = i <= 0;
     $("day-next").disabled = i >= days.length - 1;
-    const waiting = e => e.kind === "report" && e.result === "still in the mod queue";
-    const pick = e => filter === "all" ? true : filter === "ban" ? ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired", "ban_handled_elsewhere"].includes(e.kind)
-      : filter === "report" ? waiting(e) : e.kind === filter;          // "Mod queue" = only what's still waiting there
+    const isBan = e => ["ban", "ask_mods", "ban_declined_by_mod", "ban_expired", "ban_handled_elsewhere"].includes(e.kind) || (e.kind === "ask_queue" && /^Banned/.test(e.result || ""));
+    const pick = e => filter === "all" ? true : filter === "remove" ? e.kind === "remove"
+      : filter === "queue" ? ["report", "ask_queue", "ask_mods"].includes(e.kind) : filter === "ban" ? isBan(e) : true;
     const onDay = (data.recent || []).filter(e => dayKey(e.t) === day);
     const items = onDay.filter(pick);
     $("day-count").textContent = (day === today ? "Today · " : day === yest ? "Yesterday · " : "") + `${onDay.length} action${onDay.length === 1 ? "" : "s"}` + (filter === "all" ? "" : ` · ${items.length} shown`);
     $("log").innerHTML = items.length ? items.map(e => {
-      // once a mod handles a reported comment, its tag says what happened instead of "Mod queue"
-      const [cls, label] = e.kind === "report" && e.result && !waiting(e)
-        ? (/removed/.test(e.result) ? ["remove", "Mod removed"] : /approved|kept/.test(e.result) ? ["cleared", "Mod approved"] : ["declined", "Handled"])
-        : KIND[e.kind] || ["report", e.kind];
+      const [cls, label] = KIND[e.kind] || ["report", e.kind];
       const when = tfmt.format(new Date(e.t * 1000));
-      const after = e.result ? ` · <span class="result${e.result === "still in the mod queue" ? "" : e.result === "unbanned" ? " undo" : " done"}">${esc(e.result)}${e.result_by ? ` by u/${esc(e.result_by)}` : ""}</span>` : "";
-      const extra = e.kind === "ban" ? ` · ${esc(e.length || "")}${e.by ? ` · approved by u/${esc(e.by)}` : ""}${after}` : (e.kind === "ban_declined_by_mod" || e.kind === "ban_handled_elsewhere") && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : e.kind === "report" ? after : "";
-      return `<li><time>${esc(when)}</time><div class="what"><span class="tag ${cls}">${esc(label)}</span>${e.rule ? `<span class="rule">${esc(e.rule)} · ${esc(RULES[e.rule] || "")}</span>` : ""}<span class="user">u/${esc(e.user || "?")}</span>${extra}</div>
+      const res = e.result && e.kind !== "remove" ? `<span class="result${e.settled ? (/^Unbanned/.test(e.result) ? " undo" : " done") : ""}">${esc(e.result)}</span>` : "";
+      const legacy = (e.kind === "ban_declined_by_mod" || e.kind === "ban_handled_elsewhere") && e.by ? ` · u/${esc(e.by)}` : e.kind === "ask_mods" ? ` · ${esc(e.length || "")} proposed` : "";
+      return `<li><time>${esc(when)}</time><div class="what"><span class="tag ${cls}">${esc(label)}</span>${e.rule ? `<span class="rule">${esc(RULES[e.rule] || e.rule)}</span>` : ""}<span class="user">u/${esc(e.user || "?")}</span>${legacy}${res ? " · " + res : ""}</div>
         ${e.text ? `<q>${esc(e.text)}</q>` : ""}${e.why ? `<div class="why">${esc(e.why)}</div>` : ""}
-        <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Comment</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}${!canApprove(e) ? ""
-          : approvedNow.has(e.id) ? `<span class="result done">Approved</span>`
-          : `<button type="button" class="approve-btn" data-id="${esc(e.id)}" title="u/BotFeller approves the comment and takes down its removal message.">Approve</button><span class="approve-err" data-for="${esc(e.id)}"></span>`}</div></li>`;
-    }).join("") : `<li><p class="empty">${!onDay.length && !((data.days || []).find(x => x.date === day) || {}).read ? "The bot wasn't checking comments yet on this day." : filter === "all" ? (day === today ? "Nothing needed doing yet today. It's quiet out there." : "Nothing needed doing this day.") : filter === "report" ? "Nothing the bot reported is waiting in the mod queue." : "None of these on this day."}</p></li>`;
+        <div class="links">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">Open in Reddit</a>` : ""}${e.modmail ? `<a href="${esc(e.modmail)}" target="_blank" rel="noopener">Modmail</a>` : ""}${!canApprove(e) ? ""
+          : approvedNow.has(e.id) ? `<span class="result done">Approved · back up</span>`
+          : `<button type="button" class="approve-btn" data-id="${esc(e.id)}" title="Puts the comment back and takes down the bot's removal message.">Approve</button><span class="approve-err" data-for="${esc(e.id)}"></span>`}</div></li>`;
+    }).join("") : `<li><p class="empty">${!onDay.length && !((data.days || []).find(x => x.date === day) || {}).read ? "The bot wasn't checking comments yet on this day." : filter === "all" ? (day === today ? "Nothing yet today. It's quiet out there." : "Nothing this day.") : "None of these on this day."}</p></li>`;
   }
 
   function stepDay(n) {
