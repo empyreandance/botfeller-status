@@ -132,6 +132,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .log .links { align-items: center; flex-wrap: wrap; }
 .approve-btn { font: 600 13px/1 var(--body); color: var(--ok); background: transparent; border: 1px solid var(--ok); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
 .approve-btn:disabled { opacity: .6; cursor: default; }
+.nb-btn { color: var(--muted); border-color: var(--line); }
 .approve-err { color: var(--crit); font-size: 12px; }
 @media (max-width: 480px) { .log li { grid-template-columns: 1fr; } .log q, .log .why, .log .links { grid-column: 1; } }
 
@@ -323,7 +324,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
   // Approve: a request signed with a key derived from the team passcode goes to the bot's approve endpoint on the Studio
   // (Tailscale Funnel); u/BotFeller approves the comment and drops its removal message. Only items the bot removed/reported.
   const APPROVE_API = "https://alexs-mac-studio.tail4df488.ts.net/botfeller/approve";
-  const approvedNow = new Set();
+  const approvedNow = new Set(), dismissedNow = new Set();
   let approveKey = null, approveKeyFor = null;
   const canApprove = e => !!e.id && !!e.link && e.kind === "remove";      // the undo for a bot removal; queue items are decided in the queue
   async function getApproveKey() {
@@ -334,6 +335,20 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
       base, { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign"]);
     approveKeyFor = pass;
     return approveKey;
+  }
+  async function signedPost(action, id) {
+    const ts = Math.floor(Date.now() / 1000);
+    const sig = await crypto.subtle.sign("HMAC", await getApproveKey(), new TextEncoder().encode(`${action}:${id}:${ts}`));
+    const hex = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, "0")).join("");
+    const r = await fetch(APPROVE_API.replace(/approve$/, action), { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ id, ts, sig: hex }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+  }
+  async function dismissQuestion(id, btn) {
+    const err = document.querySelector(`.approve-err[data-for="${id}"]`);
+    btn.disabled = true; btn.textContent = "Closing…"; if (err) err.textContent = "";
+    try { await signedPost("dismiss", id); dismissedNow.add(id); render(); }
+    catch (ex) { btn.disabled = false; btn.textContent = "No ban"; if (err) err.textContent = `Couldn't close it (${ex.message}).`; }
   }
   async function approveComment(id, btn) {
     const err = document.querySelector(`.approve-err[data-for="${id}"]`);
@@ -467,7 +482,7 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     const fresh = queueFresh(q, now);
     $("tab-modq").textContent = fresh ? `Mod queue · ${q.total || 0}` : "Mod queue · ?";
     $("tab-modq").classList.toggle("has-work", fresh && (q.total || 0) > 0);
-    setAlert(fresh ? (q.items || []).filter(it => !opened.recent(it.id)).length + Math.max(0, (q.total || 0) - (q.items || []).length) : 0);
+    setAlert(fresh ? (q.items || []).filter(it => !opened.recent(it.id) && !dismissedNow.has(it.id)).length + Math.max(0, (q.total || 0) - (q.items || []).length) : 0);
   }
   function queueRows(now) {
     const q = data.queue || { items: [], total: 0, checked: 0 };
@@ -482,7 +497,8 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
       return `<li class="${seen ? "opened" : ""}"><time>${esc(it.t ? ago(now - it.t).replace(" ago", "") : "")}</time><div class="what"><span class="tag q-${esc(it.type)}">${esc(QTAG[it.type] || it.type)}</span>${it.rule ? `<span class="rule">${esc(RULES[it.rule] || it.rule)}</span>` : ""}<span class="user">u/${esc(it.user || "?")}</span></div>
         ${it.text ? `<q>${esc(it.text)}</q>` : ""}<div class="why">${esc(it.ask || "")}${it.reason ? ` · ${esc(it.reason)}` : ""}</div>
         ${it.answers ? `<div class="why">${esc(it.answers)}</div>` : ""}${it.deadline ? `<div class="why deadline">${esc(it.deadline)}</div>` : ""}
-        <div class="links">${it.link ? `<a data-open="${esc(it.id)}" href="${esc(it.link)}" target="_blank" rel="noopener">${seen ? "Opened · clears when Reddit shows it handled" : "Open in Reddit"}</a>` : ""}</div></li>`;
+        <div class="links">${dismissedNow.has(it.id) ? `<span class="result done">Closed · no ban</span>`
+          : `${it.link ? `<a data-open="${esc(it.id)}" href="${esc(it.link)}" target="_blank" rel="noopener">${seen ? "Opened · clears when Reddit shows it handled" : "Open in Reddit"}</a>` : ""}${it.profile ? `<a href="${esc(it.profile)}" target="_blank" rel="noopener">Profile</a>` : ""}${it.held ? `<button type="button" class="approve-btn nb-btn" data-dismiss="${esc(it.id)}" title="Close this ban question without a ban. Nothing changes on Reddit.">No ban</button><span class="approve-err" data-for="${esc(it.id)}"></span>` : ""}`}</div></li>`;
     }).join("") + (q.total > items.length ? `<li><p class="empty">${q.total - items.length} more in <a href="${MODQUEUE}" target="_blank" rel="noopener">Reddit's mod queue</a>.</p></li>` : "")
       + `<li><p class="empty"><a href="${MODQUEUE}" target="_blank" rel="noopener">Open the whole mod queue in Reddit</a></p></li>`;
   }
@@ -490,6 +506,8 @@ footer button { font: 600 13px/1 var(--body); background: none; border: 0; color
     const a = ev.target.closest("[data-open]");
     if (a) { opened.add([a.dataset.open]); setTimeout(() => data && render(), 50); }
     if (ev.target.closest("#queue-refresh")) freshen(true);
+    const nb = ev.target.closest("[data-dismiss]");
+    if (nb) dismissQuestion(nb.dataset.dismiss, nb);
   });
   let lastFetch = 0;
   async function freshen(force) {
